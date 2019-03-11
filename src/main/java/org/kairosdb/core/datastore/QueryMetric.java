@@ -16,6 +16,7 @@
 package org.kairosdb.core.datastore;
 
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Maps;
 import com.google.common.collect.SetMultimap;
 import org.kairosdb.plugin.Aggregator;
 import org.kairosdb.plugin.GroupBy;
@@ -36,6 +37,7 @@ public class QueryMetric implements DatastoreMetricQuery
 	private int cacheTime;
 	private String name;
 	private SetMultimap<String, String> tags = HashMultimap.create();
+	private Map<String, SetValuedTagPredicate> setValuedTags = Maps.newHashMap();
 	private List<GroupBy> groupBys = new ArrayList<GroupBy>();
 	private List<Aggregator> aggregators;
 	private String cacheString;
@@ -71,6 +73,12 @@ public class QueryMetric implements DatastoreMetricQuery
 
 		this.aggregators.add(aggregator);
 		return (this);
+	}
+
+	public QueryMetric setSetValuedTags(Map<String, SetValuedTagPredicate> setValuedTags)
+	{
+		this.setValuedTags = setValuedTags;
+		return this;
 	}
 
 	public QueryMetric setTags(SetMultimap<String, String> tags)
@@ -118,6 +126,12 @@ public class QueryMetric implements DatastoreMetricQuery
 	public SetMultimap<String, String> getTags()
 	{
 		return (tags);
+	}
+
+	@Override
+	public Map<String, SetValuedTagPredicate> getSetValuedTags()
+	{
+		return this.setValuedTags;
 	}
 
 	@Override

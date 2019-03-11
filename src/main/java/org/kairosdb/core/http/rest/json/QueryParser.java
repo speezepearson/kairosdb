@@ -17,6 +17,7 @@
 package org.kairosdb.core.http.rest.json;
 
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Maps;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.TreeMultimap;
 import com.google.gson.*;
@@ -283,6 +284,7 @@ public class QueryParser
 					queryMetric.setOrder(Order.fromString(order.getAsString(), context));
 
 				queryMetric.setTags(metric.getTags());
+				queryMetric.setSetValuedTags(metric.getSetValuedTags());
 
 				query.addQueryMetric(queryMetric);
 			}
@@ -563,16 +565,20 @@ public class QueryParser
 		@SerializedName("tags")
 		private SetMultimap<String, String> tags;
 
+		@SerializedName("set_valued_tags")
+		private Map<String, SetValuedTagPredicate> setValuedTags;
+
 		@SerializedName("exclude_tags")
 		private boolean exclude_tags;
 
 		@SerializedName("limit")
 		private int limit;
 
-		public Metric(String name, boolean exclude_tags, TreeMultimap<String, String> tags)
+		public Metric(String name, boolean exclude_tags, TreeMultimap<String, String> tags, Map<String, SetValuedTagPredicate> setValuedTags)
 		{
 			this.name = name;
 			this.tags = tags;
+			this.setValuedTags = setValuedTags;
 			this.exclude_tags = exclude_tags;
 			this.limit = 0;
 		}
@@ -609,6 +615,12 @@ public class QueryParser
 				sb.append(tagEntry.getValue()).append(":");
 			}
 
+			for (Map.Entry<String, SetValuedTagPredicate> tagEntry : setValuedTags.entrySet())
+			{
+				sb.append(tagEntry.getKey()).append("=");
+				sb.append(tagEntry.getValue().encodeForCacheString()).append(":");
+			}
+
 			return (sb.toString());
 		}
 
@@ -621,6 +633,18 @@ public class QueryParser
 			else
 			{
 				return HashMultimap.create();
+			}
+		}
+
+		public Map<String, SetValuedTagPredicate> getSetValuedTags()
+		{
+			if (setValuedTags != null)
+			{
+				return setValuedTags;
+			}
+			else
+			{
+				return Maps.newHashMap();
 			}
 		}
 
@@ -826,7 +850,27 @@ public class QueryParser
 				}
 			}
 
-			Metric ret = new Metric(name, exclude_tags, tags);
+			Map<String, SetValuedTagPredicate> setValuedTags = Maps.newHashMap();
+			JsonElement jeSVTags = jsonObject.get("set_valued_tags");
+			if (jeSVTags != null)
+			{
+				JsonObject joSVTags = jeSVTags.getAsJsonObject();
+				int count = 0;
+				for (Map.Entry<String, JsonElement> tagEntry : joSVTags.entrySet())
+				{
+					String context = "tags[" + count + "]";
+					if (tagEntry.getKey().isEmpty())
+						throw new ContextualJsonSyntaxException(context, "name must not be empty");
+
+					SimpleSetValuedTagPredicate value = jsonDeserializationContext.deserialize(tagEntry.getValue(), SimpleSetValuedTagPredicate.class);
+					if (value == null) {
+						throw new ContextualJsonSyntaxException(context + "." + tagEntry.getKey(), "value is malformed");
+					}
+					setValuedTags.put(tagEntry.getKey(), value);
+				}
+			}
+
+			Metric ret = new Metric(name, exclude_tags, tags, setValuedTags);
 
 			JsonElement limit = jsonObject.get("limit");
 			if (limit != null)

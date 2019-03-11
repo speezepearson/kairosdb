@@ -1,0 +1,14 @@
+{
+    "start_absolute": 784041330,
+    "end_absolute": 788879730,
+    "metrics": [
+        {
+            "name": "bob",
+            "set_valued_tags": {
+                "host": {
+                    "contains_all": ["bar","foo"]
+                }
+            }
+        }
+    ]
+}

@@ -19,15 +19,22 @@ package org.kairosdb.core.http.rest.json;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
+import org.assertj.core.util.Sets;
 import org.joda.time.DateTimeZone;
 import org.junit.Before;
 import org.junit.Test;
 import org.kairosdb.core.KairosFeatureProcessor;
 import org.kairosdb.core.KairosRootConfig;
-import org.kairosdb.core.aggregator.*;
+import org.kairosdb.core.aggregator.Sampling;
+import org.kairosdb.core.aggregator.SaveAsAggregator;
+import org.kairosdb.core.aggregator.SumAggregator;
+import org.kairosdb.core.aggregator.TestAggregatorFactory;
+import org.kairosdb.core.aggregator.TrimAggregator;
 import org.kairosdb.core.datapoints.DoubleDataPointFactoryImpl;
 import org.kairosdb.core.datastore.Duration;
 import org.kairosdb.core.datastore.QueryMetric;
+import org.kairosdb.core.datastore.SetValuedTagPredicate;
+import org.kairosdb.core.datastore.SimpleSetValuedTagPredicate;
 import org.kairosdb.core.datastore.TimeUnit;
 import org.kairosdb.core.exception.KairosDBException;
 import org.kairosdb.core.groupby.TagGroupBy;
@@ -167,6 +174,21 @@ public class QueryParserTest
 		assertThat(queryMetric.getTags().get("host").size(), equalTo(2));
 		assertThat(queryMetric.getTags().get("host"), hasItem("bar"));
 		assertThat(queryMetric.getTags().get("host"), hasItem("foo"));
+	}
+
+	@Test
+	public void test_setValuedTags() throws Exception
+	{
+		String json = Resources.toString(Resources.getResource("query-metric-set-valued-tags.json"), Charsets.UTF_8);
+
+		List<QueryMetric> results = parser.parseQueryMetric(json).getQueryMetrics();
+
+		assertThat(results.size(), equalTo(1));
+		QueryMetric queryMetric = results.get(0);
+		// TODO(spencerpearson): implement getcacheString() sensibly instead of like you did
+		//   assertThat(queryMetric.getCacheString(), equalTo("784041330:788879730:bob:host=bar:host=foo:"));
+		assertThat(queryMetric.getSetValuedTags(), notNullValue());
+		assertThat(queryMetric.getSetValuedTags().get("host"), equalTo(new SimpleSetValuedTagPredicate(Sets.newTreeSet("foo", "bar"))));
 	}
 
 	@Test

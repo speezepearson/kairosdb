@@ -16,13 +16,16 @@
 
 package org.kairosdb.datastore;
 
+import com.google.common.collect.Maps;
 import com.google.common.collect.SetMultimap;
 import org.kairosdb.core.datastore.DatastoreMetricQuery;
 import org.kairosdb.core.datastore.Order;
 import org.kairosdb.core.datastore.QueryPlugin;
+import org.kairosdb.core.datastore.SetValuedTagPredicate;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.kairosdb.util.Preconditions.checkNotNullOrEmpty;
@@ -31,17 +34,27 @@ public class DatastoreMetricQueryImpl implements DatastoreMetricQuery
 {
 	private String m_name;
 	private SetMultimap<String, String> m_tags;
+	private Map<String, SetValuedTagPredicate> m_setValuedTags;
 	private long m_startTime;
 	private long m_endTime;
 
 
 	public DatastoreMetricQueryImpl(String name, SetMultimap<String, String> tags,
-			long startTime, long endTime)
+									Map<String, SetValuedTagPredicate> setValuedTags,
+									long startTime, long endTime)
 	{
 		m_name = checkNotNullOrEmpty(name);
 		m_tags = checkNotNull(tags);
+		m_setValuedTags = checkNotNull(setValuedTags);
 		m_startTime = startTime;
 		m_endTime = endTime;
+	}
+
+
+	public DatastoreMetricQueryImpl(String name, SetMultimap<String, String> tags,
+			long startTime, long endTime)
+	{
+		this(name, tags, Maps.newHashMap(), startTime, endTime);
 	}
 
 	@Override
@@ -54,6 +67,12 @@ public class DatastoreMetricQueryImpl implements DatastoreMetricQuery
 	public SetMultimap<String, String> getTags()
 	{
 		return (m_tags);
+	}
+
+	@Override
+	public Map<String, SetValuedTagPredicate> getSetValuedTags()
+	{
+		return (m_setValuedTags);
 	}
 
 	@Override
