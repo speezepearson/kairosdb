@@ -6,7 +6,9 @@
             "name": "bob",
             "set_valued_tags": {
                 "host": {
-                    "contains_all": ["bar","foo"]
+                    "all_true": [
+                        {"contains_all": ["bar","foo"]}
+                    ]
                 }
             }
         }

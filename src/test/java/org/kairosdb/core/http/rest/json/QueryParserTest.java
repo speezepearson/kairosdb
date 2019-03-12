@@ -18,6 +18,7 @@ package org.kairosdb.core.http.rest.json;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Resources;
 import org.assertj.core.util.Sets;
 import org.joda.time.DateTimeZone;
@@ -188,7 +189,10 @@ public class QueryParserTest
 		// TODO(spencerpearson): implement getcacheString() sensibly instead of like you did
 		//   assertThat(queryMetric.getCacheString(), equalTo("784041330:788879730:bob:host=bar:host=foo:"));
 		assertThat(queryMetric.getSetValuedTags(), notNullValue());
-		assertThat(queryMetric.getSetValuedTags().get("host"), equalTo(new SimpleSetValuedTagPredicate(Sets.newTreeSet("foo", "bar"))));
+		assertThat(queryMetric.getSetValuedTags().get("host"), equalTo(new SimpleSetValuedTagPredicate(
+				ImmutableSet.of(ImmutableSet.of("foo", "bar")),
+				ImmutableSet.of(),
+				ImmutableSet.of())));
 	}
 
 	@Test

@@ -90,6 +90,7 @@ public class QueryParser
 		gsonBuilder.registerTypeAdapter(SetMultimap.class, new SetMultimapDeserializer());
 		gsonBuilder.registerTypeAdapter(RelativeTime.class, new RelativeTimeSerializer());
 		gsonBuilder.registerTypeAdapter(SetMultimap.class, new SetMultimapSerializer());
+		gsonBuilder.registerTypeAdapter(SetValuedTagPredicate.class, new SetValuedTagPredicateDeserializer());
 		gsonBuilder.setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES);
 
 		m_gson = gsonBuilder.create();
@@ -862,7 +863,7 @@ public class QueryParser
 					if (tagEntry.getKey().isEmpty())
 						throw new ContextualJsonSyntaxException(context, "name must not be empty");
 
-					SimpleSetValuedTagPredicate value = jsonDeserializationContext.deserialize(tagEntry.getValue(), SimpleSetValuedTagPredicate.class);
+					SetValuedTagPredicate value = jsonDeserializationContext.deserialize(tagEntry.getValue(), SetValuedTagPredicate.class);
 					if (value == null) {
 						throw new ContextualJsonSyntaxException(context + "." + tagEntry.getKey(), "value is malformed");
 					}
