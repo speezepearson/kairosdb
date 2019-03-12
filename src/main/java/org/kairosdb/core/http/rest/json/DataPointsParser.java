@@ -288,10 +288,8 @@ public class DataPointsParser
 				}
 			}
 
-			if (Validator.isGreaterThanOrEqualTo(validationErrors, context.setAttribute("set-valued tags count"), metric.getSetValuedTags().size(), 0)) // TODO(spencerpearson): this check is unnecessary
-			{
-				SubContext tagContext = new SubContext(context.setAttribute(null), "tag");
-
+			if (metric.getSetValuedTags().size() > 0) {
+				SubContext tagContext = new SubContext(context.setAttribute(null), "set-valued tag");
 				for (Map.Entry<String, Set<String>> entry : metric.getSetValuedTags().entrySet())
 				{
 					validateNameNotNullOrEmpty(validationErrors, tagContext, entry.getKey());
