@@ -282,37 +282,22 @@ public class DataPointsParser
 				for (Map.Entry<String, String> entry : metric.getTags().entrySet())
 				{
 					tagContext.setCount(tagCount);
-					if (Validator.isNotNullOrEmpty(validationErrors, tagContext.setAttribute("name"), entry.getKey()))
-					{
-						tagContext.setName(entry.getKey());
-						Validator.isNotNullOrEmpty(validationErrors, tagContext, entry.getKey());
-					}
-					if (Validator.isNotNullOrEmpty(validationErrors, tagContext.setAttribute("value"), entry.getValue()))
-						Validator.isNotNullOrEmpty(validationErrors, tagContext, entry.getValue());
-
+					validateNameNotNullOrEmpty(validationErrors, tagContext, entry.getKey());
+					validateValueNotNullOrEmpty(validationErrors, tagContext.setAttribute("value"), entry.getValue());
 					tagCount++;
 				}
 			}
 
 			if (Validator.isGreaterThanOrEqualTo(validationErrors, context.setAttribute("set-valued tags count"), metric.getSetValuedTags().size(), 0)) // TODO(spencerpearson): this check is unnecessary
 			{
-				int tagCount = 0;
 				SubContext tagContext = new SubContext(context.setAttribute(null), "tag");
 
 				for (Map.Entry<String, Set<String>> entry : metric.getSetValuedTags().entrySet())
 				{
-					tagContext.setCount(tagCount);
-					if (Validator.isNotNullOrEmpty(validationErrors, tagContext.setAttribute("name"), entry.getKey()))
-					{
-						tagContext.setName(entry.getKey());
-						Validator.isNotNullOrEmpty(validationErrors, tagContext, entry.getKey());
-					}
+					validateNameNotNullOrEmpty(validationErrors, tagContext, entry.getKey());
 					for (String value : entry.getValue()) {
-						if (Validator.isNotNullOrEmpty(validationErrors, tagContext.setAttribute("value"), value))
-							Validator.isNotNullOrEmpty(validationErrors, tagContext, value);
+						validateValueNotNullOrEmpty(validationErrors, tagContext, value);
 					}
-
-					tagCount++;
 				}
 			}
 		}
@@ -423,6 +408,20 @@ public class DataPointsParser
 
 		return !validationErrors.hasErrors();
 	}
+
+	private static void validateNameNotNullOrEmpty(ValidationErrors validationErrors, SubContext context, String name) {
+		if (Validator.isNotNullOrEmpty(validationErrors, context.setAttribute("name"), name))
+		{
+			context.setName(name);
+			Validator.isNotNullOrEmpty(validationErrors, context, name);
+		}
+	}
+
+	private static void validateValueNotNullOrEmpty(ValidationErrors validationErrors, SubContext context, String value) {
+		if (Validator.isNotNullOrEmpty(validationErrors, context.setAttribute("value"), value))
+			Validator.isNotNullOrEmpty(validationErrors, context, value);
+	}
+
 
 	private static ImmutableSortedMap<String, ImmutableSortedSet<String>> freezeSetValuedTags(Map<String, Set<String>> tags) {
 		return ImmutableSortedMap.copyOf(
