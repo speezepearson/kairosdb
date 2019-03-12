@@ -296,27 +296,7 @@ public class CassandraDatastore implements Datastore, ProcessorHandler, KairosMe
 
 		ListenableFuture<List<ResultSet>> listListenableFuture = Futures.allAsList(futures);
 
-		Set<String> ret = new HashSet<String>();
-
-		try
-		{
-			Iterator<ResultSet> iterator = listListenableFuture.get().iterator();
-			while (iterator.hasNext())
-			{
-				ResultSet resultSet = iterator.next();
-				while (!resultSet.isExhausted())
-				{
-					Row row = resultSet.one();
-					ret.add(row.getString(0));
-				}
-			}
-		}
-		catch (Exception e)
-		{
-			throw new DatastoreException("CQL Query failure", e);
-		}
-
-		return ret;
+		return combineStringResultSets(listListenableFuture);
 	}
 
 	private Iterable<String> queryStringIndex(final String key) throws DatastoreException
@@ -331,6 +311,10 @@ public class CassandraDatastore implements Datastore, ProcessorHandler, KairosMe
 
 		ListenableFuture<List<ResultSet>> listListenableFuture = Futures.allAsList(futures);
 
+		return combineStringResultSets(listListenableFuture);
+	}
+
+	private Iterable<String> combineStringResultSets(ListenableFuture<List<ResultSet>> listListenableFuture) throws DatastoreException {
 		Set<String> ret = new HashSet<String>();
 
 		try
