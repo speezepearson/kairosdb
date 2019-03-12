@@ -17,6 +17,7 @@
 package org.kairosdb.core.http.rest.json;
 
 import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.ImmutableSortedSet;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
@@ -36,6 +37,8 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -290,12 +293,35 @@ public class DataPointsParser
 					tagCount++;
 				}
 			}
+
+			if (Validator.isGreaterThanOrEqualTo(validationErrors, context.setAttribute("set-valued tags count"), metric.getSetValuedTags().size(), 0)) // TODO(spencerpearson): this check is unnecessary
+			{
+				int tagCount = 0;
+				SubContext tagContext = new SubContext(context.setAttribute(null), "tag");
+
+				for (Map.Entry<String, Set<String>> entry : metric.getSetValuedTags().entrySet())
+				{
+					tagContext.setCount(tagCount);
+					if (Validator.isNotNullOrEmpty(validationErrors, tagContext.setAttribute("name"), entry.getKey()))
+					{
+						tagContext.setName(entry.getKey());
+						Validator.isNotNullOrEmpty(validationErrors, tagContext, entry.getKey());
+					}
+					for (String value : entry.getValue()) {
+						if (Validator.isNotNullOrEmpty(validationErrors, tagContext.setAttribute("value"), value))
+							Validator.isNotNullOrEmpty(validationErrors, tagContext, value);
+					}
+
+					tagCount++;
+				}
+			}
 		}
 
 
 		if (!validationErrors.hasErrors())
 		{
 			ImmutableSortedMap<String, String> tags = ImmutableSortedMap.copyOf(metric.getTags());
+			ImmutableSortedMap<String, ImmutableSortedSet<String>> setValuedTags = freezeSetValuedTags(metric.getSetValuedTags());
 
 			if (metric.getTimestamp() != null && metric.getValue() != null)
 			{
@@ -317,8 +343,12 @@ public class DataPointsParser
 				{
 					if (dataPointFactory.isRegisteredType(type))
 					{
-						m_publisher.post(new DataPointEvent(metric.getName(), tags, dataPointFactory.createDataPoint(
-								type, metric.getTimestamp(), metric.getValue()), metric.getTtl()));
+						m_publisher.post(new DataPointEvent(
+								metric.getName(),
+								tags,
+								setValuedTags,
+								dataPointFactory.createDataPoint(type, metric.getTimestamp(), metric.getValue()),
+								metric.getTtl()));
 						dataPointCount++;
 					}
 					else
@@ -380,7 +410,7 @@ public class DataPointsParser
 							continue;
 						}
 
-						m_publisher.post(new DataPointEvent(metric.getName(), tags,
+						m_publisher.post(new DataPointEvent(metric.getName(), tags, setValuedTags,
 								dataPointFactory.createDataPoint(type, timestamp, dataPoint[1]), metric.getTtl()));
 						dataPointCount++;
 					}
@@ -394,6 +424,14 @@ public class DataPointsParser
 		return !validationErrors.hasErrors();
 	}
 
+	private static ImmutableSortedMap<String, ImmutableSortedSet<String>> freezeSetValuedTags(Map<String, Set<String>> tags) {
+		return ImmutableSortedMap.copyOf(
+				tags.entrySet().stream().collect(
+						Collectors.toMap(
+								Map.Entry::getKey,
+								e -> ImmutableSortedSet.copyOf(e.getValue()))));
+	}
+
 	@SuppressWarnings({"MismatchedReadAndWriteOfArray", "UnusedDeclaration"})
 	private static class NewMetric
 	{
@@ -402,6 +440,7 @@ public class DataPointsParser
 		private Long time = null;
 		private JsonElement value;
 		private Map<String, String> tags;
+		private Map<String, Set<String>> set_valued_tags;
 		private JsonElement[][] datapoints;
 		private boolean skip_validate = false;
 		private String type;
@@ -428,6 +467,11 @@ public class DataPointsParser
 		public Map<String, String> getTags()
 		{
 			return tags != null ? tags : Collections.<String, String>emptyMap();
+		}
+
+		public Map<String, Set<String>> getSetValuedTags()
+		{
+			return set_valued_tags != null ? set_valued_tags : Collections.emptyMap();
 		}
 
 		private JsonElement[][] getDatapoints()

@@ -16,6 +16,8 @@
 package org.kairosdb.core.http.rest.json;
 
 import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.ImmutableSortedSet;
 import org.kairosdb.core.datastore.ServiceKeyValue;
 import org.kairosdb.eventbus.Subscribe;
 import com.google.common.io.Resources;
@@ -246,6 +248,27 @@ public class DataPointsParserTest
 
 		assertThat(validationErrors.size(), equalTo(0));
 		assertThat(parser.getDataPointCount(), equalTo(1));
+	}
+
+	@Test
+	public void test_setValuedTags_Valid() throws DatastoreException, IOException
+	{
+		String json = "[{\"name\": \"metric1\", \"tags\":{\"foo\":\"bar\"}, \"set_valued_tags\":{\"foo\":[\"bar\",\"baz\"]}, \"datapoints\": [[0,2]]}]";
+		FakeDataStore fakeds = new FakeDataStore();
+		eventBus.register(fakeds);
+		DataPointsParser parser = new DataPointsParser(publisher, new StringReader(json),
+				new Gson(), dataPointFactory);
+
+		ValidationErrors validationErrors = parser.parse();
+
+		assertThat(validationErrors.hasErrors(), equalTo(false));
+
+		List<DataPointSet> dataPointSetList = fakeds.getDataPointSetList();
+		assertThat(dataPointSetList.size(), equalTo(1));
+
+		assertThat(
+				dataPointSetList.get(0).getSetValuedTags(),
+				equalTo(ImmutableSortedMap.of("foo", ImmutableSortedSet.of("bar", "baz"))));
 	}
 
 	@Test
@@ -725,7 +748,7 @@ public class DataPointsParserTest
 			if ((lastDataPointSet == null) || (!lastDataPointSet.getName().equals(event.getMetricName())) ||
 					(!lastDataPointSet.getTags().equals(event.getTags())))
 			{
-				lastDataPointSet = new DataPointSet(event.getMetricName(), event.getTags(), Collections.<DataPoint>emptyList());
+				lastDataPointSet = new DataPointSet(event.getMetricName(), event.getTags(), event.getSetValuedTags(), Collections.<DataPoint>emptyList());
 				dataPointSetList.add(lastDataPointSet);
 			}
 

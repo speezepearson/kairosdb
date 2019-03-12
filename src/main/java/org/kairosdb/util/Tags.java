@@ -1,6 +1,7 @@
 package org.kairosdb.util;
 
 import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.ImmutableSortedSet;
 
 /**
  Created with IntelliJ IDEA.
@@ -14,5 +15,9 @@ public class Tags
 	public static ImmutableSortedMap.Builder<String, String> create()
 	{
 		return ImmutableSortedMap.<String, String>naturalOrder();
+	}
+	public static ImmutableSortedMap.Builder<String, ImmutableSortedSet<String>> createSetValued()
+	{
+		return ImmutableSortedMap.<String, ImmutableSortedSet<String>>naturalOrder();
 	}
 }

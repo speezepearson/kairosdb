@@ -1,6 +1,7 @@
 package org.kairosdb.events;
 
 import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.ImmutableSortedSet;
 import org.kairosdb.core.DataPoint;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -17,13 +18,28 @@ public class DataPointEvent
 {
 	private final String m_metricName;
 	private final ImmutableSortedMap<String, String> m_tags;
+	private final ImmutableSortedMap<String, ImmutableSortedSet<String>> m_setValuedTags;
 	private final DataPoint m_dataPoint;
 	private final int m_ttl;
+
+	public DataPointEvent(String metricName,
+	                      ImmutableSortedMap<String, String> tags,
+	                      ImmutableSortedMap<String, ImmutableSortedSet<String>> setValuedTags,
+	                      DataPoint dataPoint,
+	                      int ttl)
+	{
+		m_metricName = checkNotNullOrEmpty(metricName);
+		m_tags = checkNotNull(tags);
+		m_setValuedTags = checkNotNull(setValuedTags);
+		m_dataPoint = checkNotNull(dataPoint);
+		m_ttl = ttl;
+	}
 
 	public DataPointEvent(String metricName, ImmutableSortedMap<String, String> tags, DataPoint dataPoint, int ttl)
 	{
 		m_metricName = checkNotNullOrEmpty(metricName);
 		m_tags = checkNotNull(tags);
+		m_setValuedTags = ImmutableSortedMap.of();
 		m_dataPoint = checkNotNull(dataPoint);
 		m_ttl = ttl;
 	}
@@ -32,6 +48,7 @@ public class DataPointEvent
 	{
 		m_metricName = checkNotNullOrEmpty(metricName);
 		m_tags = checkNotNull(tags);
+		m_setValuedTags = ImmutableSortedMap.of();
 		m_dataPoint = checkNotNull(dataPoint);
 		m_ttl = 0;
 	}
@@ -45,6 +62,11 @@ public class DataPointEvent
 	public ImmutableSortedMap<String, String> getTags()
 	{
 		return m_tags;
+	}
+
+	public ImmutableSortedMap<String, ImmutableSortedSet<String>> getSetValuedTags()
+	{
+		return m_setValuedTags;
 	}
 
 	public DataPoint getDataPoint()

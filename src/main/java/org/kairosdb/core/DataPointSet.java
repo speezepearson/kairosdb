@@ -17,6 +17,7 @@
 package org.kairosdb.core;
 
 import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.ImmutableSortedSet;
 import org.kairosdb.util.Tags;
 
 import java.util.*;
@@ -25,19 +26,30 @@ public class DataPointSet
 {
 	private final String m_name;
 	private final ImmutableSortedMap.Builder<String, String> m_tags;
+	private final ImmutableSortedMap.Builder<String, ImmutableSortedSet<String>> m_setValuedTags;
 	private final List<DataPoint> m_dataPoints;
 
 	public DataPointSet(String name)
 	{
 		m_name = name;
 		m_tags = Tags.create();
+		m_setValuedTags = Tags.createSetValued();
 		m_dataPoints = new ArrayList<>();
 	}
 
 	public DataPointSet(String mName, Map<String, String> tags, List<DataPoint> dataPoints)
 	{
+		m_name = mName;
+		m_tags = Tags.create().putAll(tags);
+		m_setValuedTags = Tags.createSetValued();
+		m_dataPoints = new ArrayList<>(dataPoints);
+	}
+
+	public DataPointSet(String mName, Map<String, String> tags, Map<String, ImmutableSortedSet<String>> setValuedTags, List<DataPoint> dataPoints)
+	{
 		this.m_name = mName;
 		this.m_tags = Tags.create().putAll(tags);
+		this.m_setValuedTags = Tags.createSetValued().putAll(setValuedTags);
 		this.m_dataPoints = new ArrayList<>(dataPoints);
 	}
 
@@ -67,6 +79,11 @@ public class DataPointSet
 	public ImmutableSortedMap<String, String> getTags()
 	{
 		return m_tags.build();
+	}
+
+	public ImmutableSortedMap<String, ImmutableSortedSet<String>> getSetValuedTags()
+	{
+		return m_setValuedTags.build();
 	}
 
 	public List<DataPoint> getDataPoints()
