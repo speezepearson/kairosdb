@@ -583,7 +583,7 @@ public class CassandraDatastore implements Datastore, ProcessorHandler, KairosMe
 				if (result.isExhausted())
 					return;
 
-				try (QueryCallback.DataPointWriter dataPointWriter = m_callback.startDataPointSet(m_rowKey.getDataType(), m_rowKey.getTags()))
+				try (QueryCallback.DataPointWriter dataPointWriter = m_callback.startDataPointSet(m_rowKey.getDataType(), m_rowKey.getTags())) // TODO(spencerpearson)?
 				{
 
 					DataPointFactory dataPointFactory = null;
