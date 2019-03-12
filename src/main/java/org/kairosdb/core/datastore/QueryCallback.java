@@ -15,7 +15,7 @@ import java.util.SortedMap;
  */
 public interface QueryCallback
 {
-	DataPointWriter startDataPointSet(String dataType, SortedMap<String, String> tags) throws IOException;
+	DataPointWriter startDataPointSet(String dataType, SortedMap<String, String> tags) throws IOException; // TODO(spencerpearson)?
 
 	interface DataPointWriter extends AutoCloseable
 	{

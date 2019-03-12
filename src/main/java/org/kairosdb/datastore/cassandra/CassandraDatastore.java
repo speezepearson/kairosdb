@@ -366,13 +366,13 @@ public class CassandraDatastore implements Datastore, ProcessorHandler, KairosMe
 	@Override
 	public Iterable<String> getTagNames() throws DatastoreException
 	{
-		return queryStringIndex(ROW_KEY_TAG_NAMES);
+		return queryStringIndex(ROW_KEY_TAG_NAMES); // TODO(spencerpearson): filter out meta-tag
 	}
 
 	@Override
 	public Iterable<String> getTagValues() throws DatastoreException
 	{
-		return queryStringIndex(ROW_KEY_TAG_VALUES);
+		return queryStringIndex(ROW_KEY_TAG_VALUES); // TODO(spencerpearson): filter out meta-tag, decompose set-values
 	}
 
 	@Override
@@ -390,6 +390,7 @@ public class CassandraDatastore implements Datastore, ProcessorHandler, KairosMe
 				tagSet.addTag(tag.getKey(), tag.getValue());
 				mm.checkMemoryAndThrowException();
 			}
+			// TODO(spencerpearson)
 		}
 
 		return (tagSet);
@@ -846,12 +847,13 @@ public class CassandraDatastore implements Datastore, ProcessorHandler, KairosMe
 							statement.setTimestamp(1, new Date(rowKey.getTimestamp()));
 							statement.setString(2, rowKey.getDataType());
 							statement.setMap(3, rowKey.getTags());
+							// TODO(spencerpearson)
 							statement.setConsistencyLevel(cluster.getReadConsistencyLevel());
 							cluster.execute(statement);
 
 							//Should only remove if the entire time window goes away and no tags are specified in query
 							//todo if we allow deletes for specific types this needs to change
-							if (deleteQuery.getTags().isEmpty())
+							if (deleteQuery.getTags().isEmpty()) // TODO(spencerpearson)?
 							{
 								statement = new BoundStatement(cluster.psRowKeyTimeDelete);
 								statement.setString(0, rowKey.getMetricName());
