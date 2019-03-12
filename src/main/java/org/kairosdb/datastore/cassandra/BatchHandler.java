@@ -3,6 +3,8 @@ package org.kairosdb.datastore.cassandra;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.datastax.driver.core.exceptions.UnavailableException;
 import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.ImmutableSortedSet;
+import com.google.gson.Gson;
 import com.google.inject.assistedinject.Assisted;
 import org.json.JSONWriter;
 import org.kairosdb.core.DataPoint;
@@ -21,6 +23,9 @@ import java.io.StringWriter;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.stream.Collectors;
 
 import static org.kairosdb.datastore.cassandra.CassandraDatastore.ROW_WIDTH;
 import static org.kairosdb.datastore.cassandra.CassandraDatastore.calculateRowTime;
@@ -31,6 +36,8 @@ import static org.kairosdb.datastore.cassandra.CassandraDatastore.getColumnName;
  */
 public class BatchHandler extends RetryCallable
 {
+
+	private static final Gson gson = new Gson();
 	public static final Logger logger = LoggerFactory.getLogger(BatchHandler.class);
 	public static final Logger failedLogger = LoggerFactory.getLogger("failed_logger");
 
@@ -85,6 +92,7 @@ public class BatchHandler extends RetryCallable
 					continue;*/
 
 			ImmutableSortedMap<String, String> tags = event.getTags();
+			ImmutableSortedMap<String, ImmutableSortedSet<String>> setValuedTags = event.getSetValuedTags();
 			DataPoint dataPoint = event.getDataPoint();
 			
 			// force default ttl if property is set, use event's ttl otherwise
@@ -112,7 +120,7 @@ public class BatchHandler extends RetryCallable
 				// if the aligned ttl is negative, the datapoint is already dead
 				if (ttl <= 0)
 				{
-			        logger.warn("alligned ttl for {} with tags {} is negative, so the datapoint is already dead, no need to store it", metricName, tags);
+			        logger.warn("alligned ttl for {} with tags {}+{} is negative, so the datapoint is already dead, no need to store it", metricName, tags, setValuedTags);
 			        continue;
 				}
 			}
@@ -122,8 +130,9 @@ public class BatchHandler extends RetryCallable
 
 			long rowTime = calculateRowTime(dataPoint.getTimestamp());
 
+			SortedMap<String, String> packedTags = packTags(tags, setValuedTags);
 			rowKey = new DataPointsRowKey(metricName, m_clusterName, rowTime, dataPoint.getDataStoreDataType(),
-					tags);
+					packedTags);
 
 			//Write out the row key if it is not cached
 			DataPointsRowKey cachedKey = m_rowKeyCache.cacheItem(rowKey);
@@ -155,6 +164,32 @@ public class BatchHandler extends RetryCallable
 			batch.addDataPoint(rowKey, columnTime, dataPoint, ttl);
 		}
 	}
+
+	private static final String MAGIC_SET_VALUED_TAG_METATAG = "__set_valued_tags__";
+
+	private SortedMap<String, String> packTags(SortedMap<String, String> stringValuedTags, SortedMap<String, ImmutableSortedSet<String>> setValuedTags) {
+		// TODO(spencerpearson): move this method somewhere sensible
+		if (setValuedTags.isEmpty()) return stringValuedTags;
+		return ImmutableSortedMap.<String,String>naturalOrder()
+				.put(MAGIC_SET_VALUED_TAG_METATAG, gson.toJson(setValuedTags.keySet()))
+				.putAll(setValuedTags.entrySet()
+						.stream()
+						.collect(Collectors.toMap(
+								Map.Entry::getKey,
+								e -> gson.toJson(e.getValue()))))
+				.build();
+	}
+
+//	private void unpackTags(Map<String, String> packedTags, Map<String, String> stringValuedTags, Map<String, ImmutableSortedSet<String>> setValuedTags) {
+//		if (packedTags.containsKey(MAGIC_SET_VALUED_TAG_METATAG)) {
+//			Set<String> setValuedTagNames = gson.fromJson(packedTags.remove(MAGIC_SET_VALUED_TAG_METATAG), Set.class); // TODO(spencerpearson): make this not totally broken
+//			for (String tagName : setValuedTagNames) {
+//				String tagValue = packedTags.remove(tagName);
+//				setValuedTags.put(tagName, ImmutableSortedSet.copyOf(gson.fromJson(tagValue, Set.class))); // TODO(spencerpearson): also this
+//			}
+//		}
+//		stringValuedTags.putAll(packedTags);
+//	}
 
 	@Override
 	public void retryCall() throws Exception
