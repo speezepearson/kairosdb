@@ -29,6 +29,7 @@ public class SetValuedTagPredicateDeserializer implements JsonDeserializer<SetVa
 	@Override
 	public SetValuedTagPredicate deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException
 	{
+		// TODO(spencerpearson): accept [pred1, pred2, ...] as a disjunction, like you can with normal tags
 		JsonObject predicate = json.getAsJsonObject();
 		if (predicate.entrySet().size() != 1) {
 			Set<String> keys = predicate.entrySet().stream().map(Map.Entry::getKey).collect(Collectors.toSet());
