@@ -1,5 +1,6 @@
 package org.kairosdb.core.datastore.setvaluedtags;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -37,6 +38,13 @@ public class ContainsAnyPredicate implements SetValuedTagPredicate {
     @Override
     public int hashCode() {
         return Objects.hash(m_tags);
+    }
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(this)
+                .add("m_tags", m_tags)
+                .toString();
     }
 
     @NotNull

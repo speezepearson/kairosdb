@@ -5,7 +5,9 @@
         {
             "name": "bob",
             "set_valued_tags": {
-                "host": {"contains_all": ["bar","foo"]}
+                "a": {"contains_all": ["b","c"]},
+                "d": {"contains_any": ["e","f"]},
+                "g": {"exactly": ["h","i"]}
             }
         }
     ]

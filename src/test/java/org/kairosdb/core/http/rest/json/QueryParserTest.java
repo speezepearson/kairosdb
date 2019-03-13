@@ -35,6 +35,8 @@ import org.kairosdb.core.datastore.Duration;
 import org.kairosdb.core.datastore.QueryMetric;
 import org.kairosdb.core.datastore.setvaluedtags.ContainsAllPredicate;
 import org.kairosdb.core.datastore.TimeUnit;
+import org.kairosdb.core.datastore.setvaluedtags.ContainsAnyPredicate;
+import org.kairosdb.core.datastore.setvaluedtags.ExactlyPredicate;
 import org.kairosdb.core.exception.KairosDBException;
 import org.kairosdb.core.groupby.TagGroupBy;
 import org.kairosdb.core.groupby.TestGroupByFactory;
@@ -178,15 +180,17 @@ public class QueryParserTest
 	@Test
 	public void test_setValuedTags() throws Exception
 	{
-		String json = Resources.toString(Resources.getResource("query-metric-set-valued-tags.json"), Charsets.UTF_8);
+		String json = Resources.toString(Resources.getResource("query-metric-set-valued-tags-valid.json"), Charsets.UTF_8);
 
 		List<QueryMetric> results = parser.parseQueryMetric(json).getQueryMetrics();
 
 		assertThat(results.size(), equalTo(1));
 		QueryMetric queryMetric = results.get(0);
-		assertThat(queryMetric.getCacheString(), equalTo("784041330:788879730:bob:host={\"contains_all\":[\"bar\",\"foo\"]}:"));
+		assertThat(queryMetric.getCacheString(), equalTo("784041330:788879730:bob:a={\"contains_all\":[\"b\",\"c\"]}:d={\"contains_all\":[\"e\",\"f\"]}:g={\"contains_all\":[\"h\",\"i\"]}:"));
 		assertThat(queryMetric.getSetValuedTags(), notNullValue());
-		assertThat(queryMetric.getSetValuedTags().get("host"), equalTo(new ContainsAllPredicate(ImmutableSet.of("foo", "bar"))));
+		assertThat(queryMetric.getSetValuedTags().get("a"), equalTo(new ContainsAllPredicate(ImmutableSet.of("b", "c"))));
+		assertThat(queryMetric.getSetValuedTags().get("d"), equalTo(new ContainsAnyPredicate(ImmutableSet.of("e", "f"))));
+		assertThat(queryMetric.getSetValuedTags().get("g"), equalTo(new ExactlyPredicate(ImmutableSet.of("h", "i"))));
 	}
 
 	@Test
@@ -322,6 +326,22 @@ public class QueryParserTest
 		String json = Resources.toString(Resources.getResource("invalid-query-metric-tag-empty-value.json"), Charsets.UTF_8);
 
 		assertBeanValidation(json, "query.metric[0].tags[0].host value must not be null or empty");
+	}
+
+	@Test
+	public void test_setValuedTags_badName_invalid() throws IOException
+	{
+		String json = Resources.toString(Resources.getResource("invalid-query-metric-set-valued-tags-bad-key.json"), Charsets.UTF_8);
+
+		assertBeanValidation(json, "query.metric[0].tags[0].a is malformed: invalid predicate key: test_nonsense_key");
+	}
+
+	@Test
+	public void test_setValuedTags_multipleKeys_invalid() throws IOException
+	{
+		String json = Resources.toString(Resources.getResource("invalid-query-metric-set-valued-tags-multiple-keys.json"), Charsets.UTF_8);
+
+		assertBeanValidation(json, "query.metric[0].tags[0].a is malformed: predicate must have exactly 1 key; got [contains_all, contains_any]");
 	}
 
 	@Test

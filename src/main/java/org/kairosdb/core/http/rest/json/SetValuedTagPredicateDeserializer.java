@@ -1,6 +1,7 @@
 package org.kairosdb.core.http.rest.json;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Sets;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
@@ -21,7 +22,7 @@ import java.util.stream.Collectors;
 public class SetValuedTagPredicateDeserializer implements JsonDeserializer<SetValuedTagPredicate>
 {
 
-	class InvalidPredicateException extends JsonParseException {
+	class InvalidPredicateException extends IllegalArgumentException {
 		InvalidPredicateException(String message) { super(message); }
 	}
 
@@ -48,13 +49,13 @@ public class SetValuedTagPredicateDeserializer implements JsonDeserializer<SetVa
 		}
 	}
 
-	private static ImmutableSet<String> parseStringSet(JsonArray json) throws JsonParseException
+	private static ImmutableSortedSet<String> parseStringSet(JsonArray json) throws JsonParseException
 	{
 		Set<String> result = Sets.newHashSet();
 		for (JsonElement e : json)
 		{
 			result.add(e.getAsString());
 		}
-		return ImmutableSet.copyOf(result);
+		return ImmutableSortedSet.copyOf(result);
 	}
 }

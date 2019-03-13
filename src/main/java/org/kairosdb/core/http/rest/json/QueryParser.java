@@ -864,7 +864,12 @@ public class QueryParser
 					if (tagEntry.getKey().isEmpty())
 						throw new ContextualJsonSyntaxException(context, "name must not be empty");
 
-					SetValuedTagPredicate value = jsonDeserializationContext.deserialize(tagEntry.getValue(), SetValuedTagPredicate.class);
+					SetValuedTagPredicate value = null;
+					try {
+						value = jsonDeserializationContext.deserialize(tagEntry.getValue(), SetValuedTagPredicate.class);
+					} catch (SetValuedTagPredicateDeserializer.InvalidPredicateException e) {
+						throw new ContextualJsonSyntaxException(context + "." + tagEntry.getKey(), "is malformed: " + e.getMessage());
+					}
 					if (value == null) {
 						throw new ContextualJsonSyntaxException(context + "." + tagEntry.getKey(), "value is malformed");
 					}
