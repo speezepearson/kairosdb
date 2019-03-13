@@ -8,49 +8,44 @@ import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import org.kairosdb.core.datastore.SetValuedTagPredicate;
-import org.kairosdb.core.datastore.SimpleSetValuedTagPredicate;
+import org.kairosdb.core.datastore.setvaluedtags.ContainsAnyPredicate;
+import org.kairosdb.core.datastore.setvaluedtags.ExactlyPredicate;
+import org.kairosdb.core.datastore.setvaluedtags.SetValuedTagPredicate;
+import org.kairosdb.core.datastore.setvaluedtags.ContainsAllPredicate;
 
 import java.lang.reflect.Type;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class SetValuedTagPredicateDeserializer implements JsonDeserializer<SetValuedTagPredicate>
 {
+
+	class InvalidPredicateException extends JsonParseException {
+		InvalidPredicateException(String message) { super(message); }
+	}
+
 	@Override
 	public SetValuedTagPredicate deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException
 	{
-		Set<ImmutableSet<String>> containsAlls = Sets.newHashSet();
-		Set<ImmutableSet<String>> containsAnys = Sets.newHashSet();
-		Set<ImmutableSet<String>> exactlys = Sets.newHashSet();
-		JsonObject query = json.getAsJsonObject();
-		for (JsonElement jPredicate : query.get("all_true").getAsJsonArray())
-		{
-			JsonObject predicate = jPredicate.getAsJsonObject();
-			if (predicate.entrySet().size() != 1) { throw new RuntimeException(); }
-
-			Map.Entry<String, JsonElement> entry = predicate.entrySet().iterator().next();
-			switch (entry.getKey())
-			{
-				case "contains_all":
-					containsAlls.add(parseStringSet(entry.getValue().getAsJsonArray()));
-					break;
-				case "contains_any":
-					containsAnys.add(parseStringSet(entry.getValue().getAsJsonArray()));
-					break;
-				case "exactly":
-					exactlys.add(parseStringSet(entry.getValue().getAsJsonArray()));
-					break;
-				default:
-					throw new RuntimeException();
-			}
+		JsonObject predicate = json.getAsJsonObject();
+		if (predicate.entrySet().size() != 1) {
+			Set<String> keys = predicate.entrySet().stream().map(Map.Entry::getKey).collect(Collectors.toSet());
+			throw new InvalidPredicateException("predicate must have exactly 1 key; got " + keys);
 		}
 
-		return new SimpleSetValuedTagPredicate(
-				ImmutableSet.copyOf(containsAlls),
-				ImmutableSet.copyOf(containsAnys),
-				ImmutableSet.copyOf(exactlys));
+		Map.Entry<String, JsonElement> entry = predicate.entrySet().iterator().next();
+		switch (entry.getKey())
+		{
+			case "contains_all":
+				return new ContainsAllPredicate(parseStringSet(entry.getValue().getAsJsonArray()));
+			case "contains_any":
+				return new ContainsAnyPredicate(parseStringSet(entry.getValue().getAsJsonArray()));
+			case "exactly":
+				return new ExactlyPredicate(parseStringSet(entry.getValue().getAsJsonArray()));
+			default:
+				throw new InvalidPredicateException("invalid predicate key: " + entry.getKey());
+		}
 	}
 
 	private static ImmutableSet<String> parseStringSet(JsonArray json) throws JsonParseException

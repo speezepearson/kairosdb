@@ -20,7 +20,6 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Resources;
-import org.assertj.core.util.Sets;
 import org.joda.time.DateTimeZone;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,8 +33,7 @@ import org.kairosdb.core.aggregator.TrimAggregator;
 import org.kairosdb.core.datapoints.DoubleDataPointFactoryImpl;
 import org.kairosdb.core.datastore.Duration;
 import org.kairosdb.core.datastore.QueryMetric;
-import org.kairosdb.core.datastore.SetValuedTagPredicate;
-import org.kairosdb.core.datastore.SimpleSetValuedTagPredicate;
+import org.kairosdb.core.datastore.setvaluedtags.ContainsAllPredicate;
 import org.kairosdb.core.datastore.TimeUnit;
 import org.kairosdb.core.exception.KairosDBException;
 import org.kairosdb.core.groupby.TagGroupBy;
@@ -186,13 +184,9 @@ public class QueryParserTest
 
 		assertThat(results.size(), equalTo(1));
 		QueryMetric queryMetric = results.get(0);
-		// TODO(spencerpearson): implement getcacheString() sensibly instead of like you did
-		//   assertThat(queryMetric.getCacheString(), equalTo("784041330:788879730:bob:host=bar:host=foo:"));
+		assertThat(queryMetric.getCacheString(), equalTo("784041330:788879730:bob:host={\"contains_all\":[\"bar\",\"foo\"]}:"));
 		assertThat(queryMetric.getSetValuedTags(), notNullValue());
-		assertThat(queryMetric.getSetValuedTags().get("host"), equalTo(new SimpleSetValuedTagPredicate(
-				ImmutableSet.of(ImmutableSet.of("foo", "bar")),
-				ImmutableSet.of(),
-				ImmutableSet.of())));
+		assertThat(queryMetric.getSetValuedTags().get("host"), equalTo(new ContainsAllPredicate(ImmutableSet.of("foo", "bar"))));
 	}
 
 	@Test

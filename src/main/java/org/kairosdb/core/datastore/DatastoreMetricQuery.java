@@ -16,6 +16,7 @@
 package org.kairosdb.core.datastore;
 
 import com.google.common.collect.SetMultimap;
+import org.kairosdb.core.datastore.setvaluedtags.SetValuedTagPredicate;
 
 import java.util.Map;
 

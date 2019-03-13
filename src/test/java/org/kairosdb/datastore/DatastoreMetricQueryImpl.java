@@ -21,7 +21,7 @@ import com.google.common.collect.SetMultimap;
 import org.kairosdb.core.datastore.DatastoreMetricQuery;
 import org.kairosdb.core.datastore.Order;
 import org.kairosdb.core.datastore.QueryPlugin;
-import org.kairosdb.core.datastore.SetValuedTagPredicate;
+import org.kairosdb.core.datastore.setvaluedtags.SetValuedTagPredicate;
 
 import java.util.Collections;
 import java.util.List;

@@ -33,6 +33,7 @@ import org.joda.time.DateTimeZone;
 import org.kairosdb.core.aggregator.*;
 import org.kairosdb.core.annotation.Feature;
 import org.kairosdb.core.datastore.*;
+import org.kairosdb.core.datastore.setvaluedtags.SetValuedTagPredicate;
 import org.kairosdb.core.http.rest.BeanValidationException;
 import org.kairosdb.core.http.rest.QueryException;
 import org.kairosdb.core.processingstage.FeatureProcessingFactory;

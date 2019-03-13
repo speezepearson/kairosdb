@@ -18,6 +18,7 @@ package org.kairosdb.core.datastore;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.SetMultimap;
+import org.kairosdb.core.datastore.setvaluedtags.SetValuedTagPredicate;
 import org.kairosdb.plugin.Aggregator;
 import org.kairosdb.plugin.GroupBy;
 import org.kairosdb.util.Preconditions;
