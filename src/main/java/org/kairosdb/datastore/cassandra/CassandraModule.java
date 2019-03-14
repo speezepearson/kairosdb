@@ -35,6 +35,7 @@ import org.kairosdb.core.KairosRootConfig;
 import org.kairosdb.core.DataPoint;
 import org.kairosdb.core.datastore.Datastore;
 import org.kairosdb.core.datastore.ServiceKeyStore;
+import org.kairosdb.core.datastore.setvaluedtags.SetValuedTagPredicate;
 import org.kairosdb.core.exception.DatastoreException;
 import org.kairosdb.core.queue.EventCompletionCallBack;
 import org.kairosdb.events.DataPointEvent;
@@ -279,7 +280,8 @@ public class CassandraModule extends AbstractModule
 				String metricName,
 				@Assisted("startTime") long startTime,
 				@Assisted("endTime") long endTime,
-				SetMultimap<String, String> filterTags) throws DatastoreException;
+				SetMultimap<String, String> filterTags,
+				Map<String, SetValuedTagPredicate> filterSetValuedTags) throws DatastoreException;
 	}
 
 

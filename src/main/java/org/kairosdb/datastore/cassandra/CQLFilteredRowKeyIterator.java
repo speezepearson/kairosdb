@@ -4,33 +4,31 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.name.Named;
+import org.kairosdb.core.datastore.setvaluedtags.SetValuedTagPredicate;
 import org.kairosdb.core.exception.DatastoreException;
 import org.kairosdb.core.reporting.ThreadReporter;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-import java.util.regex.Pattern;
+import java.util.function.Predicate;
 
 import static org.kairosdb.core.KairosConfigProperties.QUERIES_REGEX_PREFIX;
 
 public class CQLFilteredRowKeyIterator implements Iterator<DataPointsRowKey>
 {
-	private final SetMultimap<String, String> m_filterTags;
-	private final Set<String> m_filterTagNames;
+	private Predicate<DataPointsRowKey> m_tagMatcher;
 	private DataPointsRowKey m_nextKey;
 	private final Iterator<ResultSet> m_resultSets;
 	private ResultSet m_currentResultSet;
 	private final String m_metricName;
 	private final String m_clusterName;
 	private int m_rawRowKeyCount = 0;
-	private Map<String, Pattern> m_patternFilter;
 	private Set<DataPointsRowKey> m_returnedKeys;  //keep from returning duplicates, querying old and new indexes
 
 
@@ -41,30 +39,10 @@ public class CQLFilteredRowKeyIterator implements Iterator<DataPointsRowKey>
 			@Assisted("startTime") long startTime,
 			@Assisted("endTime") long endTime,
 			@Assisted SetMultimap<String, String> filterTags,
+			@Assisted Map<String, SetValuedTagPredicate> filterSetValuedTags,
 			@Named(QUERIES_REGEX_PREFIX) String regexPrefix) throws DatastoreException
 	{
-		m_filterTags = HashMultimap.create();
-		m_filterTagNames = new HashSet<>();
-		m_patternFilter = new HashMap<>();
-
-		for (Map.Entry<String, String> entry : filterTags.entries())
-		{
-			if (regexPrefix.length() != 0 && entry.getValue().startsWith(regexPrefix))
-			{
-				String regex = entry.getValue().substring(regexPrefix.length());
-
-				Pattern pattern = Pattern.compile(regex);
-
-				m_patternFilter.put(entry.getKey(), pattern);
-			}
-			else
-			{
-				m_filterTags.put(entry.getKey(), entry.getValue());
-			}
-
-			m_filterTagNames.add(entry.getKey());
-		}
-
+		m_tagMatcher = new TagMatcher(filterTags, filterSetValuedTags, regexPrefix);
 
 		m_metricName = metricName;
 		m_clusterName = cluster.getClusterName();
@@ -142,17 +120,6 @@ public class CQLFilteredRowKeyIterator implements Iterator<DataPointsRowKey>
 		}
 	}
 
-	private boolean matchRegexFilter(String tag, String value)
-	{
-		if (m_patternFilter.containsKey(tag))
-		{
-			Pattern pattern = m_patternFilter.get(tag);
-
-			return pattern.matcher(value).matches();
-		}
-		return false;
-	}
-
 	private DataPointsRowKey nextKeyFromIterator(ResultSet iterator)
 	{
 		DataPointsRowKey next = null;
@@ -160,7 +127,6 @@ public class CQLFilteredRowKeyIterator implements Iterator<DataPointsRowKey>
 		if (iterator.getColumnDefinitions().contains("row_time"))
 			newIndex = true;
 
-outer:
 		while (!iterator.isExhausted())
 		{
 			DataPointsRowKey rowKey;
@@ -179,14 +145,8 @@ outer:
 
 			m_rawRowKeyCount ++;
 
-			Map<String, String> keyTags = rowKey.getTags();
-			for (String tag : m_filterTagNames)
-			{
-				String value = keyTags.get(tag);
-				if (value == null || !(m_filterTags.get(tag).contains(value) || 
-						matchRegexFilter(tag, value)))
-					continue outer; //Don't want this key
-			}
+			if (!m_tagMatcher.test(rowKey))
+				continue;
 
 			/* We can get duplicate keys from querying old and new indexes */
 			if (m_returnedKeys.contains(rowKey))

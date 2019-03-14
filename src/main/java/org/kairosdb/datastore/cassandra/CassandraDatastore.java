@@ -954,7 +954,7 @@ public class CassandraDatastore implements Datastore, ProcessorHandler, KairosMe
 			if (m_writeCluster.containRange(query.getStartTime(), query.getEndTime()))
 			{
 				ret = m_rowKeyFilterFactory.create(m_writeCluster, query.getName(), query.getStartTime(),
-						query.getEndTime(), query.getTags());
+						query.getEndTime(), query.getTags(), query.getSetValuedTags());
 			}
 
 			for (ClusterConnection cluster : m_readClusters)
@@ -962,7 +962,7 @@ public class CassandraDatastore implements Datastore, ProcessorHandler, KairosMe
 				if (cluster.containRange(query.getStartTime(), query.getEndTime()))
 				{
 					ret = Iterators.concat(ret, m_rowKeyFilterFactory.create(cluster, query.getName(), query.getStartTime(),
-							query.getEndTime(), query.getTags()));
+							query.getEndTime(), query.getTags(), query.getSetValuedTags()));
 				}
 			}
 		}

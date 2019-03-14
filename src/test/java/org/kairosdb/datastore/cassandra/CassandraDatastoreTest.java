@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.kairosdb.core.*;
 import org.kairosdb.core.datapoints.LongDataPoint;
 import org.kairosdb.core.datastore.*;
+import org.kairosdb.core.datastore.setvaluedtags.SetValuedTagPredicate;
 import org.kairosdb.core.exception.DatastoreException;
 import org.kairosdb.core.queue.EventCompletionCallBack;
 import org.kairosdb.core.queue.MemoryQueueProcessor;
@@ -299,10 +300,11 @@ public class CassandraDatastoreTest extends DatastoreTestHelper
 					@Override
 					public CQLFilteredRowKeyIterator create(ClusterConnection cluster,
 							String metricName, long startTime, long endTime,
-							SetMultimap<String, String> filterTags) throws DatastoreException
+							SetMultimap<String, String> filterTags,
+							Map<String, SetValuedTagPredicate> filterSetValuedTags) throws DatastoreException
 					{
 						return new CQLFilteredRowKeyIterator(cluster, metricName,
-								startTime, endTime, filterTags, "");
+								startTime, endTime, filterTags, filterSetValuedTags, "");
 					}
 				});
 
