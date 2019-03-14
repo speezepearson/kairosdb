@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 
+import javax.annotation.Nullable;
 import javax.validation.constraints.NotNull;
 import java.util.Objects;
 import java.util.Set;
@@ -18,7 +19,8 @@ public class ContainsAnyPredicate implements SetValuedTagPredicate {
     }
 
     @Override
-    public boolean matches(Set<String> values) {
+    public boolean matches(@Nullable Set<String> values) {
+        if (values == null) return false;
         return !Sets.intersection(m_tags, values).isEmpty();
     }
 

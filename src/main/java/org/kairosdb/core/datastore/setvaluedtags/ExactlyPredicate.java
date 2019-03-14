@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.Gson;
 
+import javax.annotation.Nullable;
 import javax.validation.constraints.NotNull;
 import java.util.Objects;
 import java.util.Set;
@@ -17,7 +18,8 @@ public class ExactlyPredicate implements SetValuedTagPredicate {
     }
 
     @Override
-    public boolean matches(Set<String> values) {
+    public boolean matches(@Nullable Set<String> values) {
+        if (values == null) return m_tags.isEmpty();
         return m_tags.equals(values);
     }
 
